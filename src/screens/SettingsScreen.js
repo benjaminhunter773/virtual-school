@@ -17,6 +17,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useMesh } from '../context/MeshContext';
+import TestRunner from '../testing/TestRunner';
 
 const SettingsScreen = () => {
   const { meshNetwork, messageRouter } = useMesh();
@@ -142,6 +143,54 @@ const SettingsScreen = () => {
       'This feature would export your encryption keys for backup. This is a security-sensitive operation.',
       [{ text: 'OK' }]
     );
+  };
+
+  const runTests = async () => {
+    Alert.alert(
+      'Running Tests',
+      'This will run automated tests to verify app functionality. Check the console for results.',
+      [{ text: 'OK' }]
+    );
+
+    try {
+      const testRunner = new TestRunner();
+      const results = await testRunner.runAllTests();
+      
+      const passed = results.filter(r => r.passed).length;
+      const total = results.length;
+      
+      Alert.alert(
+        'Test Results',
+        `Tests completed: ${passed}/${total} passed`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      Alert.alert('Test Error', error.message);
+    }
+  };
+
+  const simulateMessage = async () => {
+    if (!messageRouter) {
+      Alert.alert('Error', 'Message router not initialized');
+      return;
+    }
+
+    try {
+      // Create a test message to ourselves
+      const testRecipient = deviceId || 'test-recipient';
+      const message = await messageRouter.sendMessage(
+        testRecipient, 
+        'This is a test message sent at ' + new Date().toLocaleTimeString()
+      );
+      
+      Alert.alert(
+        'Test Message Sent',
+        `Message ID: ${message.id.substring(0, 8)}...\nRecipient: ${testRecipient.substring(0, 8)}...`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to send test message: ' + error.message);
+    }
   };
 
   const renderSettingItem = (title, subtitle, content) => (
@@ -296,6 +345,29 @@ const SettingsScreen = () => {
             All messages use end-to-end encryption with the Signal protocol
           </Text>
         </View>
+      </View>
+
+      {/* Testing */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Testing & Debug</Text>
+        
+        <TouchableOpacity
+          style={styles.button}
+          onPress={runTests}
+        >
+          <Icon name="bug-report" size={24} color="#2196F3" />
+          <Text style={styles.buttonText}>Run Component Tests</Text>
+          <Icon name="chevron-right" size={24} color="#ccc" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={simulateMessage}
+        >
+          <Icon name="send" size={24} color="#4CAF50" />
+          <Text style={styles.buttonText}>Send Test Message</Text>
+          <Icon name="chevron-right" size={24} color="#ccc" />
+        </TouchableOpacity>
       </View>
 
       {/* Danger Zone */}
